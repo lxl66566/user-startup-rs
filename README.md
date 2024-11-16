@@ -38,6 +38,11 @@ to see more Usage, run `user-startup -h`.
 
 ## Use as lib
 
+```toml
+[dependencies]
+user-startup = { version = "0.1.0", default-features = false }
+```
+
 see [tests](tests/intergration_test.rs).
 
 ## QA

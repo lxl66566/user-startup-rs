@@ -1,6 +1,7 @@
-use std::{collections::HashSet, vec};
+use std::{collections::HashSet, fs, vec};
 
-use user_startup::add_item;
+use log::{warn, LevelFilter};
+use user_startup::{add_item, utils};
 
 /// a - b
 fn vec_diff<T: Eq + std::hash::Hash + Clone>(a: &[T], b: &[T]) -> HashSet<T> {
@@ -14,8 +15,21 @@ fn vec_diff<T: Eq + std::hash::Hash + Clone>(a: &[T], b: &[T]) -> HashSet<T> {
     set
 }
 
+/// log and path init
+fn test_init() {
+    _ = pretty_env_logger::formatted_builder()
+        .filter_level(LevelFilter::Debug)
+        .try_init();
+    let config_path = &utils::CONFIG_PATH;
+    if !config_path.exists() {
+        warn!("Config path not found. Creating it...");
+        fs::create_dir_all(config_path.as_os_str()).expect("Failed to create config directory");
+    }
+}
+
 #[test]
 fn intergration_test() {
+    test_init();
     let start = user_startup::get_items_list();
     add_item("myusrtest", None, None, None);
     add_item("myusrtest", None, None, None);
