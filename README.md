@@ -18,7 +18,7 @@ Just auto run command on startup. Support Windows, Linux and Macos, no root perm
   cargo install user-startup
   ```
 
-## Examples
+## Usage / Examples
 
 ```bash
 # Add a new startup command
@@ -34,7 +34,11 @@ user-startup remove 'my'
 user-startup open
 ```
 
-to see more examples, run `user-startup -h`.
+to see more Usage, run `user-startup -h`.
+
+## Use as lib
+
+see [tests](tests/intergration_test.rs).
 
 ## QA
 
