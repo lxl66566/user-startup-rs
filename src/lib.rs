@@ -25,11 +25,35 @@ pub fn read_first_line(path: &Path) -> std::io::Result<String> {
     ))
 }
 
+/// Extract the script name from a command.
+///
+/// # Examples
+///
+/// ```rust
+/// use user_startup::extract_name_from_cmd;
+/// assert_eq!(extract_name_from_cmd("test.ps1"), "test");
+/// assert_eq!(extract_name_from_cmd("D:\\no_install_software\\syncthing\\syncthing.exe"), "syncthing");
+/// ```
+pub fn extract_name_from_cmd(cmd: &str) -> String {
+    cmd.split_whitespace()
+        .find(|x| !x.is_empty())
+        .expect("Command is empty!")
+        .split(['/', '\\'])
+        .rev()
+        .find(|x| !x.is_empty())
+        .expect("cannot extract name from invalid command")
+        .split('.')
+        .find(|x| !x.is_empty())
+        .expect("cannot extract name from invalid command")
+        .into()
+}
+
 /// Find a writable path for a startup command. Because the command may be not
 /// unique, it will try to find the first available filename like this:
 ///
 /// test, test1, test2, test3, test4, test5 ... test1000.
-pub fn find_writable_path(name: &str) -> PathBuf {
+pub fn find_writable_path(name: impl AsRef<str>) -> PathBuf {
+    let name = name.as_ref();
     debug!("Finding writable path for `{}`", name);
     let base_path = &utils::CONFIG_PATH;
     let ext = utils::FILE_EXT;
@@ -58,8 +82,11 @@ pub fn add_item(cmd: &str, name: Option<&str>, stdout: Option<&str>, stderr: Opt
         warn!("--stdout and --stderr are not supported for linux startup scripts");
     }
 
-    let name = name.unwrap_or_else(|| cmd.split_whitespace().next().unwrap());
-    let path = find_writable_path(name);
+    let path = if let Some(name) = name {
+        find_writable_path(name)
+    } else {
+        find_writable_path(extract_name_from_cmd(cmd))
+    };
 
     fs::write(&path, utils::format(cmd, None, stdout, stderr))
         .expect("Failed to write config file");
@@ -125,4 +152,18 @@ pub fn open_config_folder() {
         .expect("Failed to open config folder")
         .wait()
         .expect("Failed to open config folder");
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    #[cfg(windows)]
+    fn test_find_writable_path() {
+        let path = find_writable_path("test");
+        assert_eq!(path, utils::CONFIG_PATH.join("test.ps1"));
+        let path = find_writable_path(r#"D:\no_install_software\syncthing\syncthing.exe"#);
+        assert_eq!(path, utils::CONFIG_PATH.join("syncthing.ps1"));
+    }
 }
