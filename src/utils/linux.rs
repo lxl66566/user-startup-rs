@@ -37,12 +37,9 @@ StandardOutput={stdout}
 StandardError={stderr}
 SyslogIdentifier={name}
 LogLevelMax=info
-JournalMaxFileSize=10M
-JournalMaxRetention=5
 TimeoutStartSec=60
 TimeoutStopSec=30
 WorkingDirectory=/tmp
-User=%i
 
 [Install]
 WantedBy=default.target
@@ -50,7 +47,7 @@ WantedBy=default.target
         prefixed_cmd = comment(cmd),
         name = name,
         cmd = cmd,
-        stdout = stdout.unwrap_or("syslog"),
-        stderr = stderr.unwrap_or("syslog"),
+        stdout = stdout.unwrap_or("journal"),
+        stderr = stderr.unwrap_or("journal"),
     )
 }
