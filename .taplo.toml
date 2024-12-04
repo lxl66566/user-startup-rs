@@ -1,8 +1,3 @@
-include = ["**/*.toml"]
-
-[[rule]]
-include = ["**/Cargo.toml", ".taplo.toml", "Cargo.toml", "rustfmt.toml"]
-
 [rule.formatting]
 align_comments       = true
 align_entries        = true
