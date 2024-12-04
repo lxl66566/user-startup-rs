@@ -38,7 +38,7 @@ enum Commands {
         no_table: bool,
     },
     /// Remove startup commands
-    #[command(visible_alias = "r")]
+    #[command(visible_alias = "r", visible_alias = "rm")]
     Remove {
         /// The ids of the items to remove
         #[clap(required = true)]

@@ -1,4 +1,5 @@
 #![warn(clippy::cargo)]
+#![allow(clippy::multiple_crate_versions)] // windows-sys
 
 pub mod utils;
 use std::{
@@ -8,6 +9,16 @@ use std::{
 };
 
 use log::{debug, error, info, warn};
+
+/// Execute a command and log itself.
+pub fn exec(cmd: &str) -> std::io::Result<()> {
+    let mut parts = cmd.split_whitespace();
+    let true_cmd = parts.next().expect("Command cannot be empty");
+    let args: Vec<&str> = parts.collect();
+    debug!("Executing `{}`", cmd);
+    Command::new(true_cmd).args(args).status()?;
+    Ok(())
+}
 
 /// Read the first not-empty line of a file.
 pub fn read_first_line(path: &Path) -> std::io::Result<String> {
@@ -92,6 +103,20 @@ pub fn add_item(cmd: &str, name: Option<&str>, stdout: Option<&str>, stderr: Opt
         .expect("Failed to write config file");
 
     info!("Added `{}` to `{}`", cmd, path.display());
+
+    // Reload the daemon and enable the service
+    #[cfg(target_os = "linux")]
+    {
+        exec("systemctl daemon-reload --user").expect("daemon reloading error");
+        exec(
+            format!(
+                "systemctl enable {} --user",
+                path.file_name().unwrap().to_string_lossy()
+            )
+            .as_str(),
+        )
+        .expect("daemon enabling error");
+    }
 }
 
 /// Get a list of startup commands.
@@ -116,7 +141,7 @@ pub fn get_items_list() -> Vec<(String, String)> {
         let path = entry.path();
         if path
             .extension()
-            .map_or(false, |ext| ext == utils::FILE_EXT.trim_start_matches('.'))
+            .is_some_and(|ext| ext == utils::FILE_EXT.trim_start_matches('.'))
         {
             if let Ok(first_line) = read_first_line(&path) {
                 let id = path.file_stem().unwrap().to_string_lossy().into_owned();
@@ -135,9 +160,21 @@ pub fn remove_items(ids: Vec<String>) {
     for id in ids {
         let path = utils::CONFIG_PATH.join(format!("{}{}", id, utils::FILE_EXT));
         if path.exists() {
+            // Disable the service
+            #[cfg(target_os = "linux")]
+            {
+                exec(
+                    format!(
+                        "systemctl disable {} --user",
+                        path.file_name().unwrap().to_string_lossy()
+                    )
+                    .as_str(),
+                )
+                .expect("daemon disabling error");
+            }
             fs::remove_file(&path)
                 .unwrap_or_else(|e| panic!("Failed to remove file `{}`: {}", path.display(), e));
-            info!("Removed `{}`", id);
+            info!("Removed id `{}`", id);
         } else {
             error!("Config file id `{}` not found", id);
         }
@@ -156,6 +193,7 @@ pub fn open_config_folder() {
 
 #[cfg(test)]
 mod tests {
+    #[cfg(windows)]
     use super::*;
 
     #[test]
