@@ -1,5 +1,7 @@
 use std::{path::PathBuf, sync::LazyLock as Lazy};
 
+use super::parse_command;
+
 pub static CONFIG_PATH: Lazy<PathBuf> = Lazy::new(|| {
     dirs::home_dir()
         .expect("Could not find home directory")
@@ -18,7 +20,9 @@ pub const OPEN_COMMAND: &str = "open";
 pub const FILE_EXT: &str = ".plist";
 
 pub fn format(cmd: &str, name: Option<&str>, stdout: Option<&str>, stderr: Option<&str>) -> String {
-    let name = name.unwrap_or_else(|| cmd.split_whitespace().next().unwrap());
+    let name = name
+        .map(|s| s.to_string())
+        .unwrap_or_else(|| parse_command(cmd).0);
     format!(
         r#"{prefixed_cmd}
 <?xml version="1.0" encoding="UTF-8"?>
