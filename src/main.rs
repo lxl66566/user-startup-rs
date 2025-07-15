@@ -1,7 +1,11 @@
 use std::fs;
+#[cfg(target_os = "windows")]
+use std::path::PathBuf;
 
 use clap::{Parser, Subcommand, ValueHint};
 use log::{LevelFilter, warn};
+#[cfg(target_os = "windows")]
+use user_startup::utils::run_no_window;
 use user_startup::{add_item, get_items_list, open_config_folder, remove_items, utils};
 
 #[derive(Parser)]
@@ -47,6 +51,19 @@ enum Commands {
     /// Open the startup folder
     #[command(visible_alias = "o")]
     Open,
+    /// Run command with NO_WINDOW
+    #[cfg(target_os = "windows")]
+    Run {
+        /// The command to run
+        #[clap(required = true)]
+        command: String,
+        /// Redirect the command's stdout to a file.
+        #[arg(long, value_hint(ValueHint::FilePath))]
+        stdout: Option<PathBuf>,
+        /// Redirect the command's stderr to a file.
+        #[arg(long, value_hint(ValueHint::FilePath))]
+        stderr: Option<PathBuf>,
+    },
 }
 
 fn main() {
@@ -83,6 +100,12 @@ fn main() {
         }
         Commands::Remove { ids } => remove_items(ids),
         Commands::Open => open_config_folder(),
+        #[cfg(target_os = "windows")]
+        Commands::Run {
+            command,
+            stdout,
+            stderr,
+        } => run_no_window(command, stdout, stderr).expect("Failed to run command"),
     }
 }
 
