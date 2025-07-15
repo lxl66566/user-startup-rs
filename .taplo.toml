@@ -1,4 +1,6 @@
-[rule.formatting]
+exclude = ["target/**"]
+
+[formatting]
 align_comments       = true
 align_entries        = true
 array_trailing_comma = true

@@ -1,6 +1,6 @@
 use std::{collections::HashSet, fs, vec};
 
-use log::{warn, LevelFilter};
+use log::{LevelFilter, warn};
 use user_startup::{add_item, utils};
 
 /// a - b

@@ -17,7 +17,7 @@ pub static CONFIG_PATH: Lazy<PathBuf> = Lazy::new(|| {
 pub const COMMENT_PREFIX: &str = "# ";
 
 pub fn comment(s: &str) -> String {
-    format!("{}{}", COMMENT_PREFIX, s)
+    format!("{COMMENT_PREFIX}{s}")
 }
 
 pub const OPEN_COMMAND: &str = "explorer";
@@ -37,7 +37,7 @@ Start-Process "{bin}" -ArgumentList "{rest}" -WindowStyle Hidden {stdout} {stder
         prefixed_cmd = comment(cmd),
         bin = bin,
         rest = escape_quotes(rest),
-        stdout = stdout.map_or(String::new(), |s| format!("-RedirectStandardOutput {}", s)),
-        stderr = stderr.map_or(String::new(), |s| format!("-RedirectStandardError {}", s))
+        stdout = stdout.map_or(String::new(), |s| format!("-RedirectStandardOutput {s}")),
+        stderr = stderr.map_or(String::new(), |s| format!("-RedirectStandardError {s}"))
     )
 }

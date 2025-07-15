@@ -15,7 +15,7 @@ pub fn exec(cmd: &str) -> std::io::Result<()> {
     let mut parts = cmd.split_whitespace();
     let true_cmd = parts.next().expect("Command cannot be empty");
     let args: Vec<&str> = parts.collect();
-    debug!("Executing `{}`", cmd);
+    debug!("Executing `{cmd}`");
     Command::new(true_cmd).args(args).status()?;
     Ok(())
 }
@@ -30,10 +30,7 @@ pub fn read_first_line(path: &Path) -> std::io::Result<String> {
             return Ok(stripped.to_string());
         }
     }
-    Err(std::io::Error::new(
-        std::io::ErrorKind::Other,
-        "File is empty",
-    ))
+    Err(std::io::Error::other("File is empty"))
 }
 
 /// Extract the script name from a command.
@@ -65,17 +62,17 @@ pub fn extract_name_from_cmd(cmd: &str) -> String {
 /// test, test1, test2, test3, test4, test5 ... test1000.
 pub fn find_writable_path(name: impl AsRef<str>) -> PathBuf {
     let name = name.as_ref();
-    debug!("Finding writable path for `{}`", name);
+    debug!("Finding writable path for `{name}`");
     let base_path = &utils::CONFIG_PATH;
     let ext = utils::FILE_EXT;
 
-    let initial_path = base_path.join(format!("{}{}", name, ext));
+    let initial_path = base_path.join(format!("{name}{ext}"));
     if !initial_path.exists() {
         return initial_path;
     }
 
     for i in 1..1000 {
-        let path = base_path.join(format!("{}{}{}", name, i, ext));
+        let path = base_path.join(format!("{name}{i}{ext}"));
         if !path.exists() {
             debug!(
                 "Found writable path `{}`",
@@ -142,13 +139,12 @@ pub fn get_items_list() -> Vec<(String, String)> {
         if path
             .extension()
             .is_some_and(|ext| ext == utils::FILE_EXT.trim_start_matches('.'))
+            && let Ok(first_line) = read_first_line(&path)
         {
-            if let Ok(first_line) = read_first_line(&path) {
-                let id = path.file_stem().unwrap().to_string_lossy().into_owned();
-                if first_line.starts_with(utils::COMMENT_PREFIX) {
-                    let command = first_line.trim_start_matches(utils::COMMENT_PREFIX).trim();
-                    res.push((id, command.to_string()));
-                }
+            let id = path.file_stem().unwrap().to_string_lossy().into_owned();
+            if first_line.starts_with(utils::COMMENT_PREFIX) {
+                let command = first_line.trim_start_matches(utils::COMMENT_PREFIX).trim();
+                res.push((id, command.to_string()));
             }
         }
     }
@@ -174,9 +170,9 @@ pub fn remove_items(ids: Vec<String>) {
             }
             fs::remove_file(&path)
                 .unwrap_or_else(|e| panic!("Failed to remove file `{}`: {}", path.display(), e));
-            info!("Removed id `{}`", id);
+            info!("Removed id `{id}`");
         } else {
-            error!("Config file id `{}` not found", id);
+            error!("Config file id `{id}` not found");
         }
     }
 }

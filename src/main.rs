@@ -1,7 +1,7 @@
 use std::fs;
 
 use clap::{Parser, Subcommand, ValueHint};
-use log::{warn, LevelFilter};
+use log::{LevelFilter, warn};
 use user_startup::{add_item, get_items_list, open_config_folder, remove_items, utils};
 
 #[derive(Parser)]
@@ -76,7 +76,7 @@ fn main() {
             if no_table {
                 let temp = get_items_list().into_iter();
                 println!("id\tcommand");
-                temp.for_each(|(id, c)| println!("{}\t{}", id, c));
+                temp.for_each(|(id, c)| println!("{id}\t{c}"));
             } else {
                 list_items()
             }
@@ -89,9 +89,9 @@ fn main() {
 /// List all startup commands with a table.
 pub fn list_items() {
     use comfy_table::{
-        presets::UTF8_FULL,
         Table,
         TableComponent::{BottomLeftCorner, BottomRightCorner, TopLeftCorner, TopRightCorner},
+        presets::UTF8_FULL,
     };
 
     let mut table = Table::new();
