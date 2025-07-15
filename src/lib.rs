@@ -39,7 +39,7 @@ pub fn read_first_line(path: &Path) -> std::io::Result<String> {
 ///
 /// ```rust
 /// use user_startup::extract_name_from_cmd;
-/// assert_eq!(extract_name_from_cmd("test.ps1"), "test");
+/// assert_eq!(extract_name_from_cmd("test.cmd"), "test");
 /// assert_eq!(extract_name_from_cmd("D:\\no_install_software\\syncthing\\syncthing.exe"), "syncthing");
 /// ```
 pub fn extract_name_from_cmd(cmd: &str) -> String {
@@ -196,8 +196,10 @@ mod tests {
     #[cfg(windows)]
     fn test_find_writable_path() {
         let path = find_writable_path("test");
-        assert_eq!(path, utils::CONFIG_PATH.join("test.ps1"));
-        let path = find_writable_path(r#"D:\no_install_software\syncthing\syncthing.exe"#);
-        assert_eq!(path, utils::CONFIG_PATH.join("syncthing.ps1"));
+        assert_eq!(path, utils::CONFIG_PATH.join("test.cmd"));
+        add_item("test", None, None, None);
+        let path = find_writable_path("test");
+        assert_eq!(path, utils::CONFIG_PATH.join("test1.cmd"));
+        remove_items(vec!["test".to_string()]);
     }
 }
