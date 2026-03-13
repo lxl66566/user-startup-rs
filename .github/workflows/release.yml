@@ -11,7 +11,7 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: release rust project
         uses: lxl66566/rust-simple-release@main
         with:
@@ -24,3 +24,4 @@ jobs:
             aarch64-apple-darwin
             x86_64-apple-darwin
           token: ${{ secrets.GH_TOKEN }}
+          features: bin

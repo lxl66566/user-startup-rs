@@ -22,7 +22,7 @@ pub static CONFIG_PATH: Lazy<PathBuf> = Lazy::new(|| {
         .join("Startup")
 });
 
-pub const COMMENT_PREFIX: &str = "# ";
+pub const COMMENT_PREFIX: &str = ":: ";
 
 pub fn comment(s: &str) -> String {
     format!("{COMMENT_PREFIX}{s}")

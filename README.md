@@ -40,10 +40,10 @@ to see more Usage, run `user-startup -h`.
 
 ```toml
 [dependencies]
-user-startup = { version = "0.1.0", default-features = false }
+user-startup = { version = "0.3.1", default-features = false }
 ```
 
-see [tests](tests/intergration_test.rs).
+see [tests](tests/intergration_test.rs) for more examples.
 
 ## QA
 
