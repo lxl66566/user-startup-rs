@@ -55,11 +55,14 @@ pub fn extract_command(content: &str) -> Option<String> {
 }
 
 pub fn format(cmd: &str, name: &str, stdout: Option<&str>, stderr: Option<&str>) -> String {
+    // systemd requires an explicit `append:` prefix to redirect output to a
+    // file; a bare path is invalid and would prevent the unit from starting.
+    let stdout = stdout.map_or_else(|| "journal".to_string(), |s| format!("append:{s}"));
+    let stderr = stderr.map_or_else(|| "journal".to_string(), |s| format!("append:{s}"));
     format!(
         r#"{prefixed_cmd}
 [Unit]
 Description={name}
-After=network.target
 
 [Service]
 ExecStart={cmd}
@@ -72,7 +75,6 @@ SyslogIdentifier={name}
 LogLevelMax=info
 TimeoutStartSec=60
 TimeoutStopSec=30
-WorkingDirectory=/tmp
 
 [Install]
 WantedBy=default.target
@@ -80,7 +82,7 @@ WantedBy=default.target
         prefixed_cmd = comment(cmd),
         name = name,
         cmd = cmd,
-        stdout = stdout.unwrap_or("journal"),
-        stderr = stderr.unwrap_or("journal"),
+        stdout = stdout,
+        stderr = stderr,
     )
 }
