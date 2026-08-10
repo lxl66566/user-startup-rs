@@ -1,16 +1,29 @@
 [package]
-authors     = ["Absolutex <lxl66566@gmail.com>"]
-categories  = ["command-line-utilities"]
-description = "Simple cross-platform tool to make your command auto run on startup"
-edition     = "2024"
-homepage    = "https://github.com/lxl66566/user-startup-rs"
-keywords    = ["startup", "startup-script", "startup-command", "auto-run", "autostart"]
-license     = "MIT"
 name        = "user-startup"
+version     = "0.3.2"
+edition     = "2024"
+description = "Simple cross-platform tool to make your command auto run on startup"
 readme      = "README.md"
+homepage    = "https://github.com/lxl66566/user-startup-rs"
 repository  = "https://github.com/lxl66566/user-startup-rs"
-version     = "0.3.1"
+license     = "MIT"
+keywords    = [
+  "auto-run",
+  "autostart",
+  "startup",
+  "startup-command",
+  "startup-script",
+]
+categories  = ["command-line-utilities"]
 
+[lib]
+name = "user_startup"
+path = "src/lib.rs"
+
+[[bin]]
+name              = "user-startup"
+path              = "src/main.rs"
+required-features = ["bin"]
 
 [dependencies]
 clap              = { version = "4.6", features = ["derive"], optional = true }
@@ -22,20 +35,25 @@ pretty_env_logger = { version = "0.5", optional = true }
 [dev-dependencies]
 
 [features]
-bin     = ["clap", "comfy-table", "pretty_env_logger"]
 default = ["bin"]
+bin     = ["clap", "comfy-table", "pretty_env_logger"]
+
+[lints.clippy]
+all                     = { level = "warn", priority = -1 }
+cargo                   = { level = "warn", priority = -1 }
+doc_markdown            = "allow"
+missing_errors_doc      = "allow"
+missing_panics_doc      = "allow"
+multiple_crate_versions = "allow"
+pedantic                = { level = "warn", priority = -1 }
+wildcard_imports        = "allow"
+
+[lints.rust]
+unsafe_code           = "allow"
+unused_qualifications = "warn"
 
 [profile.release]
-lto       = "thin"
 opt-level = "s"
-panic     = "abort"
 strip     = true
-
-[lib]
-name = "user_startup"
-path = "src/lib.rs"
-
-[[bin]]
-name              = "user-startup"
-path              = "src/main.rs"
-required-features = ["bin"]
+lto       = true
+panic     = "abort"

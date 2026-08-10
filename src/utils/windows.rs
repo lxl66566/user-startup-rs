@@ -8,7 +8,7 @@ use std::{
 
 use super::parse_command;
 
-const CREATE_NO_WINDOW: u32 = 0x08000000;
+const CREATE_NO_WINDOW: u32 = 0x0800_0000;
 
 pub static CONFIG_PATH: Lazy<PathBuf> = Lazy::new(|| {
     dirs::home_dir()
@@ -24,6 +24,7 @@ pub static CONFIG_PATH: Lazy<PathBuf> = Lazy::new(|| {
 
 pub const COMMENT_PREFIX: &str = ":: ";
 
+#[must_use]
 pub fn comment(s: &str) -> String {
     format!("{COMMENT_PREFIX}{s}")
 }
@@ -33,9 +34,10 @@ pub const OPEN_COMMAND: &str = "explorer";
 pub const FILE_EXT: &str = ".cmd";
 
 fn escape_quotes(s: impl AsRef<str>) -> String {
-    s.as_ref().replace("\"", "^\"")
+    s.as_ref().replace('"', "^\"")
 }
 
+#[must_use]
 pub fn format(cmd: &str, _: Option<&str>, stdout: Option<&str>, stderr: Option<&str>) -> String {
     format!(
         r#"{prefixed_cmd}

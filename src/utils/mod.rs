@@ -83,7 +83,7 @@ mod tests {
         assert_eq!(args, "arg1 \"'arg 2 with spaces'\"");
 
         // Test with single quotes around the executable
-        let command = r#"'C:\Program Files\My App\myapp.exe' arg1 'arg 2 with spaces'"#;
+        let command = r"'C:\Program Files\My App\myapp.exe' arg1 'arg 2 with spaces'";
         let (executable, args) = parse_command(command);
         assert_eq!(executable, "C:\\Program Files\\My App\\myapp.exe");
         assert_eq!(args, "arg1 'arg 2 with spaces'");

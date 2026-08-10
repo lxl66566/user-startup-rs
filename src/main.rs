@@ -95,9 +95,9 @@ fn main() {
                 println!("id\tcommand");
                 temp.for_each(|(id, c)| println!("{id}\t{c}"));
             } else {
-                list_items()
+                list_items();
             }
-        }
+        },
         Commands::Remove { ids } => remove_items(ids),
         Commands::Open => open_config_folder(),
         #[cfg(target_os = "windows")]

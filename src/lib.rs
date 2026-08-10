@@ -40,8 +40,12 @@ pub fn read_first_line(path: &Path) -> std::io::Result<String> {
 /// ```rust
 /// use user_startup::extract_name_from_cmd;
 /// assert_eq!(extract_name_from_cmd("test.cmd"), "test");
-/// assert_eq!(extract_name_from_cmd("D:\\no_install_software\\syncthing\\syncthing.exe"), "syncthing");
+/// assert_eq!(
+///     extract_name_from_cmd("D:\\no_install_software\\syncthing\\syncthing.exe"),
+///     "syncthing"
+/// );
 /// ```
+#[must_use]
 pub fn extract_name_from_cmd(cmd: &str) -> String {
     cmd.split_whitespace()
         .find(|x| !x.is_empty())
