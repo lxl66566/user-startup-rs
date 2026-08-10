@@ -31,7 +31,10 @@ pub const COMMENT_PREFIX: &str = ":: ";
 
 #[must_use]
 pub fn comment(s: &str) -> String {
-    format!("{COMMENT_PREFIX}{s}")
+    s.lines()
+        .map(|l| format!("{COMMENT_PREFIX}{l}"))
+        .collect::<Vec<_>>()
+        .join("\n")
 }
 
 pub const OPEN_COMMAND: &str = "explorer";
@@ -47,16 +50,23 @@ pub fn sanitize_file_stem(name: &str) -> String {
 /// Extract the original command from a startup file's content.
 #[must_use]
 pub fn extract_command(content: &str) -> Option<String> {
-    content
-        .lines()
-        .map(str::trim)
-        .find(|l| !l.is_empty())
-        .and_then(|line| {
-            line.strip_prefix(COMMENT_PREFIX)
-                .map(str::trim)
-                .filter(|s| !s.is_empty())
-                .map(Into::into)
-        })
+    let mut parts = vec![];
+    for line in content.lines() {
+        let trimmed = line.trim_end();
+        if trimmed.is_empty() {
+            continue;
+        }
+        if let Some(rest) = trimmed.strip_prefix(COMMENT_PREFIX) {
+            parts.push(rest.to_string());
+        } else {
+            break;
+        }
+    }
+    if parts.is_empty() {
+        None
+    } else {
+        Some(parts.join("\n"))
+    }
 }
 
 fn escape_batch(s: &str) -> String {

@@ -18,7 +18,10 @@ pub static CONFIG_PATH: Lazy<PathBuf> = Lazy::new(|| {
 pub const COMMENT_PREFIX: &str = "# ";
 
 pub fn comment(s: &str) -> String {
-    format!("{COMMENT_PREFIX}{s}")
+    s.lines()
+        .map(|l| format!("{COMMENT_PREFIX}{l}"))
+        .collect::<Vec<_>>()
+        .join("\n")
 }
 
 pub const OPEN_COMMAND: &str = "xdg-open";
@@ -42,16 +45,36 @@ pub fn sanitize_file_stem(name: &str) -> String {
 /// Extract the original command from a unit file's content.
 #[must_use]
 pub fn extract_command(content: &str) -> Option<String> {
-    content
-        .lines()
-        .map(str::trim)
-        .find(|l| !l.is_empty())
-        .and_then(|line| {
-            line.strip_prefix(COMMENT_PREFIX)
-                .map(str::trim)
-                .filter(|s| !s.is_empty())
-                .map(Into::into)
-        })
+    let mut parts = vec![];
+    for line in content.lines() {
+        let trimmed = line.trim_end();
+        if trimmed.is_empty() {
+            continue;
+        }
+        if let Some(rest) = trimmed.strip_prefix(COMMENT_PREFIX) {
+            parts.push(rest.to_string());
+        } else {
+            break;
+        }
+    }
+    if parts.is_empty() {
+        None
+    } else {
+        Some(parts.join("\n"))
+    }
+}
+
+/// Escape a string for sh's ANSI-C quoting (`$'...'`).
+fn sh_escape(s: &str) -> String {
+    s.replace('\\', "\\\\")
+        .replace('\'', "\\'")
+        .replace('\n', "\\n")
+        .replace('\t', "\\t")
+}
+
+/// Escape a string inside systemd's double quotes.
+fn systemd_escape(s: &str) -> String {
+    s.replace('\\', "\\\\").replace('"', "\\\"")
 }
 
 pub fn format(
@@ -65,11 +88,11 @@ pub fn format(
     // file; a bare path is invalid and would prevent the unit from starting.
     let stdout = stdout.map_or_else(|| "journal".to_string(), |s| format!("append:{s}"));
     let stderr = stderr.map_or_else(|| "journal".to_string(), |s| format!("append:{s}"));
-    // systemd only groups ExecStart tokens with double quotes and unescapes
-    // `\"` and `\\`, so escape both before wrapping the shell command.
+    // Unit values cannot span lines and systemd only groups tokens with
+    // double quotes, so pass the script through sh's ANSI-C quoting; this
+    // keeps quotes, newlines and tabs intact through both escape layers.
     let exec_start = if shell {
-        let escaped = cmd.replace('\\', "\\\\").replace('"', "\\\"");
-        format!("/bin/sh -c \"{escaped}\"")
+        format!("/bin/sh -c \"$'{}'\"", systemd_escape(&sh_escape(cmd)))
     } else {
         cmd.to_string()
     };
