@@ -61,6 +61,7 @@ pub fn extract_command(content: &str) -> Option<String> {
 }
 
 // `_shell` is unused: commands always run through `/bin/sh -c`, see below.
+#[must_use]
 pub fn format(
     cmd: &str,
     id: &str,

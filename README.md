@@ -43,7 +43,7 @@ to see more Usage, run `user-startup -h`.
 user-startup = { version = "0.3.1", default-features = false }
 ```
 
-see [tests](tests/intergration_test.rs) for more examples.
+see [tests](tests/integration_test.rs) for more examples.
 
 ## QA
 

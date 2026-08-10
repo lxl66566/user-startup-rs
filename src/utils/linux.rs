@@ -17,6 +17,7 @@ pub static CONFIG_PATH: Lazy<PathBuf> = Lazy::new(|| {
 
 pub const COMMENT_PREFIX: &str = "# ";
 
+#[must_use]
 pub fn comment(s: &str) -> String {
     s.lines()
         .map(|l| format!("{COMMENT_PREFIX}{l}"))
@@ -77,6 +78,7 @@ fn systemd_escape(s: &str) -> String {
     s.replace('\\', "\\\\").replace('"', "\\\"")
 }
 
+#[must_use]
 pub fn format(
     cmd: &str,
     id: &str,
@@ -97,7 +99,7 @@ pub fn format(
         cmd.to_string()
     };
     format!(
-        r#"{prefixed_cmd}
+        r"{prefixed_cmd}
 [Unit]
 Description={name}
 
@@ -115,7 +117,7 @@ TimeoutStopSec=30
 
 [Install]
 WantedBy=default.target
-"#,
+",
         prefixed_cmd = comment(cmd),
         name = id,
         exec_start = exec_start,

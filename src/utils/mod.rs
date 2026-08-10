@@ -1,9 +1,9 @@
-#[cfg(target_os = "linux")]
-mod linux;
-#[cfg(target_os = "macos")]
-mod macos;
-#[cfg(target_os = "windows")]
-mod windows;
+// All platform modules are compiled on every target so that their pure
+// formatting logic can be tested cross-platform; only the re-export of the
+// current platform is gated.
+pub mod linux;
+pub mod macos;
+pub mod windows;
 
 #[cfg(target_os = "linux")]
 pub use linux::*;

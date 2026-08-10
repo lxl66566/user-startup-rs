@@ -1,13 +1,11 @@
-use std::{
-    fs::File,
-    os::windows::process::CommandExt,
-    path::{Path, PathBuf},
-    process::Command,
-    sync::LazyLock as Lazy,
-};
+#[cfg(target_os = "windows")]
+use std::{fs::File, os::windows::process::CommandExt, path::Path, process::Command};
+use std::{path::PathBuf, sync::LazyLock as Lazy};
 
+#[cfg(target_os = "windows")]
 use super::parse_command;
 
+#[cfg(target_os = "windows")]
 const CREATE_NO_WINDOW: u32 = 0x0800_0000;
 
 /// The startup folder. Can be overridden by the `USER_STARTUP_CONFIG_DIR`
@@ -112,6 +110,7 @@ pub fn format(
 }
 
 /// Run a command with NO_WINDOW.
+#[cfg(target_os = "windows")]
 pub fn run_no_window(
     cmd: impl AsRef<str>,
     stdout: Option<impl AsRef<Path>>,
