@@ -48,17 +48,18 @@ impl<I: Iterator> IteratorExt for I {
 /// Parse a command into an executable and arguments.
 ///
 /// Note that the returned executable string will not contains leading and
-/// suffix quotes.
-pub fn parse_command(command: impl AsRef<str>) -> (String, String) {
+/// suffix quotes. Returns `None` if the command is empty.
+#[must_use]
+pub fn parse_command(command: impl AsRef<str>) -> Option<(String, String)> {
     let mut command = command.as_ref().trim().chars().peekable();
-    if ['\'', '"'].contains(command.peek().expect("command is empty")) {
-        let first_quote = command.next().unwrap();
+    if ['\'', '"'].contains(command.peek()?) {
+        let first_quote = command.next()?;
         let (executable, rest) = command.split_when(|c| c == &first_quote);
         let args = rest.skip_while(|c| *c == ' ').collect::<String>();
-        (executable.collect::<String>(), args)
+        Some((executable.collect::<String>(), args))
     } else {
         let (executable, args) = command.split_when(|c| *c == ' ');
-        (executable.collect::<String>(), args.collect::<String>())
+        Some((executable.collect::<String>(), args.collect::<String>()))
     }
 }
 
@@ -78,20 +79,24 @@ mod tests {
     fn test_parse_command() {
         // Test with no quotes around the executable
         let command = r#"ppp arg1 "'arg 2 with spaces'""#;
-        let (executable, args) = parse_command(command);
+        let (executable, args) = parse_command(command).unwrap();
         assert_eq!(executable, "ppp");
         assert_eq!(args, "arg1 \"'arg 2 with spaces'\"");
 
         // Test with single quotes around the executable
         let command = r"'C:\Program Files\My App\myapp.exe' arg1 'arg 2 with spaces'";
-        let (executable, args) = parse_command(command);
+        let (executable, args) = parse_command(command).unwrap();
         assert_eq!(executable, "C:\\Program Files\\My App\\myapp.exe");
         assert_eq!(args, "arg1 'arg 2 with spaces'");
 
         // Test with double quotes around the executable
         let command = r#""C:\Program Files\My App\myapp.exe" arg1 'arg 2 with spaces'"#;
-        let (executable, args) = parse_command(command);
+        let (executable, args) = parse_command(command).unwrap();
         assert_eq!(executable, "C:\\Program Files\\My App\\myapp.exe");
         assert_eq!(args, "arg1 'arg 2 with spaces'");
+
+        // Empty command
+        assert_eq!(parse_command(""), None);
+        assert_eq!(parse_command("   "), None);
     }
 }

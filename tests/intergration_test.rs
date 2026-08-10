@@ -1,7 +1,7 @@
-use std::{collections::HashSet, fs, vec};
+use std::{collections::HashSet, fs};
 
 use log::{LevelFilter, warn};
-use user_startup::{add_item, utils};
+use user_startup::{AddOptions, add_item, utils};
 
 /// a - b
 fn vec_diff<T: Eq + std::hash::Hash + Clone>(a: &[T], b: &[T]) -> HashSet<T> {
@@ -30,10 +30,10 @@ fn test_init() {
 #[test]
 fn intergration_test() {
     test_init();
-    let start = user_startup::get_items_list();
-    add_item("myusrtest", None, None, None);
-    add_item("myusrtest", None, None, None);
-    let items = user_startup::get_items_list();
+    let start = user_startup::get_items_list().unwrap();
+    add_item("myusrtest", AddOptions::default()).unwrap();
+    add_item("myusrtest", AddOptions::default()).unwrap();
+    let items = user_startup::get_items_list().unwrap();
     assert_eq!(items.len(), start.len() + 2);
     assert_eq!(
         vec_diff(&items, &start),
@@ -42,5 +42,5 @@ fn intergration_test() {
             ("myusrtest1".to_string(), "myusrtest".to_string())
         ])
     );
-    user_startup::remove_items(vec!["myusrtest".to_string(), "myusrtest1".to_string()]);
+    user_startup::remove_items(&["myusrtest".to_string(), "myusrtest1".to_string()]).unwrap();
 }

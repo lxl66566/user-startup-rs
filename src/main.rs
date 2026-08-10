@@ -1,12 +1,12 @@
-use std::fs;
 #[cfg(target_os = "windows")]
 use std::path::PathBuf;
+use std::{fs, process::exit};
 
 use clap::{Parser, Subcommand, ValueHint};
 use log::{LevelFilter, warn};
 #[cfg(target_os = "windows")]
 use user_startup::utils::run_no_window;
-use user_startup::{add_item, get_items_list, open_config_folder, remove_items, utils};
+use user_startup::{AddOptions, add_item, get_items_list, open_config_folder, remove_items, utils};
 
 #[derive(Parser)]
 #[command(about = "Make any command automatically run on startup")]
@@ -69,10 +69,17 @@ enum Commands {
 fn main() {
     log_init();
 
+    if let Err(e) = run() {
+        eprintln!("Error: {e}");
+        exit(1);
+    }
+}
+
+fn run() -> user_startup::Result<()> {
     let config_path = &utils::CONFIG_PATH;
     if !config_path.exists() {
         warn!("Config path not found. Creating it...");
-        fs::create_dir_all(config_path.as_os_str()).expect("Failed to create config directory");
+        fs::create_dir_all(config_path.as_os_str())?;
     }
 
     let cli = Cli::parse();
@@ -83,34 +90,36 @@ fn main() {
             name,
             stdout,
             stderr,
-        } => add_item(
-            &command,
-            name.as_deref(),
-            stdout.as_deref(),
-            stderr.as_deref(),
-        ),
+        } => {
+            add_item(&command, AddOptions {
+                name: name.as_deref(),
+                stdout: stdout.as_deref(),
+                stderr: stderr.as_deref(),
+            })?;
+        },
         Commands::List { no_table } => {
             if no_table {
-                let temp = get_items_list().into_iter();
+                let temp = get_items_list()?.into_iter();
                 println!("id\tcommand");
                 temp.for_each(|(id, c)| println!("{id}\t{c}"));
             } else {
-                list_items();
+                list_items()?;
             }
         },
-        Commands::Remove { ids } => remove_items(ids),
-        Commands::Open => open_config_folder(),
+        Commands::Remove { ids } => remove_items(&ids)?,
+        Commands::Open => open_config_folder()?,
         #[cfg(target_os = "windows")]
         Commands::Run {
             command,
             stdout,
             stderr,
-        } => run_no_window(command, stdout, stderr).expect("Failed to run command"),
+        } => run_no_window(command, stdout, stderr)?,
     }
+    Ok(())
 }
 
 /// List all startup commands with a table.
-pub fn list_items() {
+pub fn list_items() -> user_startup::Result<()> {
     use comfy_table::{
         Table,
         TableComponent::{BottomLeftCorner, BottomRightCorner, TopLeftCorner, TopRightCorner},
@@ -128,11 +137,12 @@ pub fn list_items() {
     table.set_style(BottomRightCorner, '╯');
     table.set_header(vec!["id", "command"]);
 
-    let items = get_items_list();
+    let items = get_items_list()?;
     for (id, command) in items {
         table.add_row(vec![id, command]);
     }
     println!("{table}");
+    Ok(())
 }
 
 #[inline]
@@ -148,7 +158,6 @@ pub fn log_init_with_default_level(level: LevelFilter) {
     _ = pretty_env_logger::formatted_builder()
         .filter_level(level)
         .format_timestamp_secs()
-        .filter_module("reqwest", LevelFilter::Info)
         .parse_default_env()
         .try_init();
 }

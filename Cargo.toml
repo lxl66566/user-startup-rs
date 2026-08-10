@@ -1,6 +1,6 @@
 [package]
 name        = "user-startup"
-version     = "0.3.2"
+version     = "0.4.0"
 edition     = "2024"
 description = "Simple cross-platform tool to make your command auto run on startup"
 readme      = "README.md"
@@ -31,6 +31,7 @@ comfy-table       = { version = "7.2", optional = true }
 dirs              = "6.0.0"
 log               = "0.4"
 pretty_env_logger = { version = "0.5", optional = true }
+thiserror         = "2.0"
 
 [dev-dependencies]
 

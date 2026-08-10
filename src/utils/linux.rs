@@ -2,9 +2,12 @@
 
 use std::{path::PathBuf, sync::LazyLock as Lazy};
 
-use super::parse_command;
-
+/// The systemd user unit directory. Can be overridden by the
+/// `USER_STARTUP_CONFIG_DIR` environment variable (useful for testing).
 pub static CONFIG_PATH: Lazy<PathBuf> = Lazy::new(|| {
+    if let Some(path) = std::env::var_os("USER_STARTUP_CONFIG_DIR") {
+        return PathBuf::from(path);
+    }
     dirs::home_dir()
         .expect("Could not find home directory")
         .join(".config")
@@ -15,17 +18,43 @@ pub static CONFIG_PATH: Lazy<PathBuf> = Lazy::new(|| {
 pub const COMMENT_PREFIX: &str = "# ";
 
 pub fn comment(s: &str) -> String {
-    format!("{}{}", COMMENT_PREFIX, s)
+    format!("{COMMENT_PREFIX}{s}")
 }
 
 pub const OPEN_COMMAND: &str = "xdg-open";
 
 pub const FILE_EXT: &str = ".service";
 
-pub fn format(cmd: &str, name: Option<&str>, stdout: Option<&str>, stderr: Option<&str>) -> String {
-    let name = name
-        .map(|s| s.to_string())
-        .unwrap_or_else(|| parse_command(cmd).0);
+/// Make a name safe to use as a systemd unit file stem.
+#[must_use]
+pub fn sanitize_file_stem(name: &str) -> String {
+    name.chars()
+        .map(|c| {
+            if c.is_ascii_alphanumeric() || matches!(c, '-' | '_' | '.') {
+                c
+            } else {
+                '-'
+            }
+        })
+        .collect()
+}
+
+/// Extract the original command from a unit file's content.
+#[must_use]
+pub fn extract_command(content: &str) -> Option<String> {
+    content
+        .lines()
+        .map(str::trim)
+        .find(|l| !l.is_empty())
+        .and_then(|line| {
+            line.strip_prefix(COMMENT_PREFIX)
+                .map(str::trim)
+                .filter(|s| !s.is_empty())
+                .map(Into::into)
+        })
+}
+
+pub fn format(cmd: &str, name: &str, stdout: Option<&str>, stderr: Option<&str>) -> String {
     format!(
         r#"{prefixed_cmd}
 [Unit]
