@@ -64,7 +64,7 @@ fn escape_quotes(s: impl AsRef<str>) -> String {
 }
 
 #[must_use]
-pub fn format(cmd: &str, _name: &str, stdout: Option<&str>, stderr: Option<&str>) -> String {
+pub fn format(cmd: &str, _id: &str, stdout: Option<&str>, stderr: Option<&str>) -> String {
     format!(
         r#"{prefixed_cmd}
 "{self_bin}" run "{cmd}" {stdout} {stderr}

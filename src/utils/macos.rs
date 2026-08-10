@@ -12,12 +12,6 @@ pub static CONFIG_PATH: Lazy<PathBuf> = Lazy::new(|| {
         .join("LaunchAgents")
 });
 
-pub const COMMENT_PREFIX: &str = "<!--";
-
-pub fn comment(s: &str) -> String {
-    format!("{}{}\n-->", COMMENT_PREFIX, s)
-}
-
 pub const OPEN_COMMAND: &str = "open";
 
 pub const FILE_EXT: &str = ".plist";
@@ -28,53 +22,83 @@ pub fn sanitize_file_stem(name: &str) -> String {
     name.replace(['/', ':'], "-")
 }
 
+fn xml_escape(s: &str) -> String {
+    s.replace('&', "&amp;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;")
+        .replace('"', "&quot;")
+        .replace('\'', "&apos;")
+}
+
+fn xml_unescape(s: &str) -> String {
+    s.replace("&lt;", "<")
+        .replace("&gt;", ">")
+        .replace("&quot;", "\"")
+        .replace("&apos;", "'")
+        // `&amp;` must be unescaped last
+        .replace("&amp;", "&")
+}
+
 /// Extract the original command from a plist file's content.
 #[must_use]
 pub fn extract_command(content: &str) -> Option<String> {
-    content
-        .lines()
-        .map(str::trim)
-        .find(|l| !l.is_empty())
-        .and_then(|line| {
-            line.strip_prefix(COMMENT_PREFIX)
-                .map(str::trim)
-                .filter(|s| !s.is_empty())
-                .map(Into::into)
-        })
+    let start = content.find("<key>ProgramArguments</key>")?;
+    let rest = &content[start..];
+    let end = rest.find("</array>")?;
+    let mut args = Vec::new();
+    let mut cur = &rest[..end];
+    while let Some(s) = cur.find("<string>") {
+        let after = &cur[s + "<string>".len()..];
+        let e = after.find("</string>")?;
+        args.push(xml_unescape(&after[..e]));
+        cur = &after[e + "</string>".len()..];
+    }
+    match args.as_slice() {
+        [] => None,
+        [sh, flag, cmd] if sh == "/bin/sh" && flag == "-c" => Some(cmd.clone()),
+        _ => Some(args.join(" ")),
+    }
 }
 
-pub fn format(cmd: &str, name: &str, stdout: Option<&str>, stderr: Option<&str>) -> String {
+pub fn format(cmd: &str, id: &str, stdout: Option<&str>, stderr: Option<&str>) -> String {
+    // launchd does not invoke a shell, so run the command through `sh -c` to
+    // support arguments, quoting, pipes and other shell syntax.
+    let argv = ["/bin/sh", "-c", cmd]
+        .iter()
+        .map(|a| format!("        <string>{}</string>", xml_escape(a)))
+        .collect::<Vec<_>>()
+        .join("\n");
+    let stdout_block = stdout.map_or(String::new(), |s| {
+        format!(
+            "    <key>StandardOutPath</key>\n    <string>{}</string>\n",
+            xml_escape(s)
+        )
+    });
+    let stderr_block = stderr.map_or(String::new(), |s| {
+        format!(
+            "    <key>StandardErrorPath</key>\n    <string>{}</string>\n",
+            xml_escape(s)
+        )
+    });
     format!(
-        r#"{prefixed_cmd}
-<?xml version="1.0" encoding="UTF-8"?>
+        r#"<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
     <key>Label</key>
-    <string>{name}</string>
+    <string>user-startup.{id}</string>
     <key>ProgramArguments</key>
     <array>
-        <string>{cmd}</string>
+{argv}
     </array>
     <key>RunAtLoad</key>
     <true/>
-    <key>KeepAlive</key>
-    <true/>
-    <string>{stdout}</string>
-    <string>{stderr}</string>
-    <key>StandardOutPath</key>
-    <string>{stdout_path}</string>
-    <key>StandardErrorPath</key>
-    <string>{stderr_path}</string>
-</dict>
+{stdout_block}{stderr_block}</dict>
 </plist>
 "#,
-        prefixed_cmd = comment(cmd),
-        name = name,
-        cmd = cmd,
-        stdout = stdout.unwrap_or_default(),
-        stderr = stderr.unwrap_or_default(),
-        stdout_path = stdout.map_or(String::new(), |s| format!("{}.out", s)),
-        stderr_path = stderr.map_or(String::new(), |s| format!("{}.err", s)),
+        id = xml_escape(id),
+        argv = argv,
+        stdout_block = stdout_block,
+        stderr_block = stderr_block,
     )
 }

@@ -54,7 +54,7 @@ pub fn extract_command(content: &str) -> Option<String> {
         })
 }
 
-pub fn format(cmd: &str, name: &str, stdout: Option<&str>, stderr: Option<&str>) -> String {
+pub fn format(cmd: &str, id: &str, stdout: Option<&str>, stderr: Option<&str>) -> String {
     // systemd requires an explicit `append:` prefix to redirect output to a
     // file; a bare path is invalid and would prevent the unit from starting.
     let stdout = stdout.map_or_else(|| "journal".to_string(), |s| format!("append:{s}"));
@@ -80,7 +80,7 @@ TimeoutStopSec=30
 WantedBy=default.target
 "#,
         prefixed_cmd = comment(cmd),
-        name = name,
+        name = id,
         cmd = cmd,
         stdout = stdout,
         stderr = stderr,

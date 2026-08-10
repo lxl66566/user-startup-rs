@@ -21,7 +21,7 @@ pub struct AddOptions<'a> {
 }
 
 /// Run a program and return an error if it exits with a non-success status.
-#[cfg(target_os = "linux")]
+#[cfg(any(target_os = "linux", target_os = "macos"))]
 fn run_status(program: &str, args: &[&str]) -> std::io::Result<()> {
     debug!("Executing `{program} {}`", args.join(" "));
     let status = Command::new(program).args(args).status()?;
@@ -55,6 +55,26 @@ fn on_item_removed(path: &std::path::Path) {
     let name = path.file_name().unwrap_or_default().to_string_lossy();
     if let Err(e) = run_status("systemctl", &["disable", &name, "--user"]) {
         warn!("Failed to disable service `{name}`: {e}");
+    }
+}
+
+/// Load the LaunchAgent so that it takes effect immediately. Failures are
+/// only logged, since the plist will be loaded automatically on next login.
+#[cfg(target_os = "macos")]
+fn on_item_added(path: &std::path::Path) {
+    let path_str = path.to_string_lossy();
+    if let Err(e) = run_status("launchctl", &["load", "-w", &path_str]) {
+        warn!("Failed to load LaunchAgent `{}`: {e}", path.display());
+    }
+}
+
+/// Unload the LaunchAgent before removing its plist. Failures are only
+/// logged.
+#[cfg(target_os = "macos")]
+fn on_item_removed(path: &std::path::Path) {
+    let path_str = path.to_string_lossy();
+    if let Err(e) = run_status("launchctl", &["unload", "-w", &path_str]) {
+        warn!("Failed to unload LaunchAgent `{}`: {e}", path.display());
     }
 }
 
@@ -128,14 +148,21 @@ pub fn add_item(cmd: &str, options: AddOptions) -> Result<PathBuf> {
     fs::create_dir_all(&*utils::CONFIG_PATH)?;
 
     let path = find_writable_path(utils::sanitize_file_stem(&name))?;
+    // Use the final file stem as the item id so that generated ids (e.g.
+    // systemd unit names, launchd labels) are always unique and valid.
+    let id = path
+        .file_stem()
+        .unwrap_or_default()
+        .to_string_lossy()
+        .into_owned();
     fs::write(
         &path,
-        utils::format(cmd, &name, options.stdout, options.stderr),
+        utils::format(cmd, &id, options.stdout, options.stderr),
     )?;
 
     info!("Added `{}` to `{}`", cmd, path.display());
 
-    #[cfg(target_os = "linux")]
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
     on_item_added(&path);
 
     Ok(path)
@@ -201,7 +228,7 @@ pub fn remove_items(ids: &[String]) -> Result<()> {
         validate_id(id)?;
         let path = utils::CONFIG_PATH.join(format!("{}{}", id, utils::FILE_EXT));
         if path.exists() {
-            #[cfg(target_os = "linux")]
+            #[cfg(any(target_os = "linux", target_os = "macos"))]
             on_item_removed(&path);
             fs::remove_file(&path)?;
             info!("Removed id `{id}`");
