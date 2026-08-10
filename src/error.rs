@@ -10,6 +10,8 @@ pub enum Error {
     TooManyItems(String),
     #[error("invalid id `{0}`: must not be empty or contain path separators")]
     InvalidId(String),
+    #[error("command already exists with id `{0}` (use --force to add it anyway)")]
+    AlreadyExists(String),
     #[error("config file id `{0}` not found")]
     NotFound(String),
 }

@@ -32,7 +32,16 @@ fn intergration_test() {
     test_init();
     let start = user_startup::get_items_list().unwrap();
     add_item("myusrtest", AddOptions::default()).unwrap();
-    add_item("myusrtest", AddOptions::default()).unwrap();
+    // Adding the same command again is rejected unless forced.
+    assert!(matches!(
+        add_item("myusrtest", AddOptions::default()),
+        Err(user_startup::Error::AlreadyExists(_))
+    ));
+    add_item("myusrtest", AddOptions {
+        force: true,
+        ..AddOptions::default()
+    })
+    .unwrap();
     let items = user_startup::get_items_list().unwrap();
     assert_eq!(items.len(), start.len() + 2);
     assert_eq!(

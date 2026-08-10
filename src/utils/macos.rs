@@ -60,7 +60,14 @@ pub fn extract_command(content: &str) -> Option<String> {
     }
 }
 
-pub fn format(cmd: &str, id: &str, stdout: Option<&str>, stderr: Option<&str>) -> String {
+// `_shell` is unused: commands always run through `/bin/sh -c`, see below.
+pub fn format(
+    cmd: &str,
+    id: &str,
+    stdout: Option<&str>,
+    stderr: Option<&str>,
+    _shell: bool,
+) -> String {
     // launchd does not invoke a shell, so run the command through `sh -c` to
     // support arguments, quoting, pipes and other shell syntax.
     let argv = ["/bin/sh", "-c", cmd]

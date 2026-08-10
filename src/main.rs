@@ -32,6 +32,13 @@ enum Commands {
         /// Redirect the command's stderr to a file.
         #[arg(long, value_hint(ValueHint::FilePath))]
         stderr: Option<String>,
+        /// Run the command through a shell, enabling multi-line commands and
+        /// shell syntax (pipes, redirections, ...).
+        #[arg(long)]
+        shell: bool,
+        /// Add the command even if an identical one already exists.
+        #[arg(short, long)]
+        force: bool,
     },
     /// List all startup commands
     #[command(visible_alias = "l", visible_alias = "info", visible_alias = "i")]
@@ -90,11 +97,15 @@ fn run() -> user_startup::Result<()> {
             name,
             stdout,
             stderr,
+            shell,
+            force,
         } => {
             add_item(&command, AddOptions {
                 name: name.as_deref(),
                 stdout: stdout.as_deref(),
                 stderr: stderr.as_deref(),
+                shell,
+                force,
             })?;
         },
         Commands::List { no_table } => {

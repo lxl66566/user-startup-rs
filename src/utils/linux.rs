@@ -54,18 +54,32 @@ pub fn extract_command(content: &str) -> Option<String> {
         })
 }
 
-pub fn format(cmd: &str, id: &str, stdout: Option<&str>, stderr: Option<&str>) -> String {
+pub fn format(
+    cmd: &str,
+    id: &str,
+    stdout: Option<&str>,
+    stderr: Option<&str>,
+    shell: bool,
+) -> String {
     // systemd requires an explicit `append:` prefix to redirect output to a
     // file; a bare path is invalid and would prevent the unit from starting.
     let stdout = stdout.map_or_else(|| "journal".to_string(), |s| format!("append:{s}"));
     let stderr = stderr.map_or_else(|| "journal".to_string(), |s| format!("append:{s}"));
+    // systemd only groups ExecStart tokens with double quotes and unescapes
+    // `\"` and `\\`, so escape both before wrapping the shell command.
+    let exec_start = if shell {
+        let escaped = cmd.replace('\\', "\\\\").replace('"', "\\\"");
+        format!("/bin/sh -c \"{escaped}\"")
+    } else {
+        cmd.to_string()
+    };
     format!(
         r#"{prefixed_cmd}
 [Unit]
 Description={name}
 
 [Service]
-ExecStart={cmd}
+ExecStart={exec_start}
 Restart=on-failure
 RestartSec=5
 LimitNOFILE=4096
@@ -81,7 +95,7 @@ WantedBy=default.target
 "#,
         prefixed_cmd = comment(cmd),
         name = id,
-        cmd = cmd,
+        exec_start = exec_start,
         stdout = stdout,
         stderr = stderr,
     )

@@ -18,6 +18,11 @@ pub struct AddOptions<'a> {
     pub stdout: Option<&'a str>,
     /// Redirect the command's stderr to a file.
     pub stderr: Option<&'a str>,
+    /// Run the command through a shell, enabling multi-line commands and
+    /// shell syntax (pipes, redirections, ...).
+    pub shell: bool,
+    /// Add the command even if an identical one already exists.
+    pub force: bool,
 }
 
 /// Run a program and return an error if it exits with a non-success status.
@@ -140,6 +145,12 @@ pub fn add_item(cmd: &str, options: AddOptions) -> Result<PathBuf> {
         return Err(Error::EmptyCommand);
     }
 
+    if !options.force
+        && let Some((id, _)) = get_items_list()?.into_iter().find(|(_, c)| c == cmd)
+    {
+        return Err(Error::AlreadyExists(id));
+    }
+
     let name = match options.name {
         Some(name) => name.to_string(),
         None => extract_name_from_cmd(cmd)?,
@@ -157,7 +168,7 @@ pub fn add_item(cmd: &str, options: AddOptions) -> Result<PathBuf> {
         .into_owned();
     fs::write(
         &path,
-        utils::format(cmd, &id, options.stdout, options.stderr),
+        utils::format(cmd, &id, options.stdout, options.stderr, options.shell),
     )?;
 
     info!("Added `{}` to `{}`", cmd, path.display());

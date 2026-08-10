@@ -68,8 +68,21 @@ fn escape_batch(s: &str) -> String {
 }
 
 #[must_use]
-pub fn format(cmd: &str, _id: &str, stdout: Option<&str>, stderr: Option<&str>) -> String {
+pub fn format(
+    cmd: &str,
+    _id: &str,
+    stdout: Option<&str>,
+    stderr: Option<&str>,
+    shell: bool,
+) -> String {
     use std::fmt::Write as _;
+
+    // In shell mode the command is written to the batch file as-is and
+    // interpreted by cmd.exe directly; quoting and escaping are the user's
+    // responsibility. Multi-line commands are supported this way.
+    if shell {
+        return format!("{}\n{cmd}\n", comment(cmd));
+    }
 
     let mut line = format!(
         "\"{self_bin}\" run \"{cmd}\"",
