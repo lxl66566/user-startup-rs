@@ -59,24 +59,33 @@ pub fn extract_command(content: &str) -> Option<String> {
         })
 }
 
-fn escape_quotes(s: impl AsRef<str>) -> String {
-    s.as_ref().replace('"', "^\"")
+fn escape_batch(s: &str) -> String {
+    // In batch files, `%` triggers variable expansion even inside quotes, so
+    // it must be doubled. A literal `"` is written as `\"`, which cmd.exe
+    // passes through verbatim and the child's CommandLineToArgvW then parses
+    // back as a quote (MSVC argv rules).
+    s.replace('%', "%%").replace('"', "\\\"")
 }
 
 #[must_use]
 pub fn format(cmd: &str, _id: &str, stdout: Option<&str>, stderr: Option<&str>) -> String {
-    format!(
-        r#"{prefixed_cmd}
-"{self_bin}" run "{cmd}" {stdout} {stderr}
-"#,
+    use std::fmt::Write as _;
+
+    let mut line = format!(
+        "\"{self_bin}\" run \"{cmd}\"",
         self_bin = std::env::current_exe()
             .expect("Failed to get current executable path")
             .display(),
-        prefixed_cmd = comment(cmd),
-        cmd = escape_quotes(cmd),
-        stdout = stdout.map_or(String::new(), |s| format!("--stdout {s}")),
-        stderr = stderr.map_or(String::new(), |s| format!("--stderr {s}"))
-    )
+        cmd = escape_batch(cmd),
+    );
+    // Quote the redirection paths so that paths with spaces keep working.
+    if let Some(stdout) = stdout {
+        _ = write!(line, " --stdout \"{stdout}\"");
+    }
+    if let Some(stderr) = stderr {
+        _ = write!(line, " --stderr \"{stderr}\"");
+    }
+    format!("{}\n{line}\n", comment(cmd))
 }
 
 /// Run a command with NO_WINDOW.
