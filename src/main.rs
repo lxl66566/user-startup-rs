@@ -131,21 +131,11 @@ fn run() -> user_startup::Result<()> {
 
 /// List all startup commands with a table.
 pub fn list_items() -> user_startup::Result<()> {
-    use comfy_table::{
-        Table,
-        TableComponent::{BottomLeftCorner, BottomRightCorner, TopLeftCorner, TopRightCorner},
-        presets::UTF8_FULL,
-    };
+    use comfy_table::{Table, presets::UTF8_FULL};
 
     let mut table = Table::new();
-    // Load the UTF8_FULL preset
-    table.load_preset(UTF8_FULL);
-    // Set all outer corners to round UTF8 corners
-    // This is basically the same as the UTF8_ROUND_CORNERS modifier
-    table.set_style(TopLeftCorner, '╭');
-    table.set_style(TopRightCorner, '╮');
-    table.set_style(BottomLeftCorner, '╰');
-    table.set_style(BottomRightCorner, '╯');
+    // Load the UTF8_FULL preset with round UTF8 corners
+    table.load_style(UTF8_FULL.with_rounded_corners());
     table.set_header(vec!["id", "command"]);
 
     let items = get_items_list()?;
